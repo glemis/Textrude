@@ -1,4 +1,6 @@
 ﻿using Engine.Application;
+using MyCompany.ScribanMethodsObject;
+using MyCompany.ScribanMethodsStatic;
 using Scriban.Runtime;
 using System;
 using System.Threading;
@@ -24,7 +26,12 @@ namespace TextrudeInteractive
             templateManager._context.LoopLimit = 500;
             templateManager._context.ObjectRecursionLimit = 50;
             templateManager._context.StrictVariables = false;
-            return new ApplicationEngine(templateManager, _environment, cancel);
+
+            ApplicationEngine applicationEngine = new(templateManager, _environment, cancel);
+            applicationEngine.ImportMethods(new ArrayMethods());
+            applicationEngine.ImportMethods("cool_methods", () => new[] { typeof(CoolMethods) });
+
+            return applicationEngine;
         }
     }
 }
