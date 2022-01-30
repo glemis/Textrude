@@ -14,6 +14,7 @@ using System.Windows.Media;
 using Engine.Application;
 using Engine.Model;
 using MaterialDesignExtensions.Controls;
+using Scriban.Runtime;
 using TextrudeInteractive.Monaco.Messages;
 
 #if ! HASGITVERSION
@@ -28,6 +29,9 @@ namespace TextrudeInteractive
     /// </summary>
     public partial class MainWindow : MaterialWindow
     {
+        //Dependency injections
+        private readonly ApplicationEngineFactory _applicationEngineFactory;
+
         private const string HomePage = @"https://github.com/NeilMacMullen/Textrude";
 
         private readonly MonacoVisualSettings _editorVisualSettings = new();
@@ -47,8 +51,9 @@ namespace TextrudeInteractive
         private int _responseTimeMs = 50;
         private int _uiLockCount;
 
-        public MainWindow()
+        public MainWindow(ApplicationEngineFactory _applicationEngineFactory)
         {
+            this._applicationEngineFactory = _applicationEngineFactory;
             InitializeComponent();
 
             if (!MonacoResourceFetcher.IsWebView2RuntimeAvailable())
@@ -427,10 +432,9 @@ namespace TextrudeInteractive
             return _editorVisualSettings.IsBusy;
         }
 
-        private static TimedOperation<ApplicationEngine> Render(EngineInputSet gi, CancellationToken cancel)
+        private TimedOperation<ApplicationEngine> Render(EngineInputSet gi, CancellationToken cancel)
         {
-            var rte = new RunTimeEnvironment(new FileSystem());
-            var engine = new ApplicationEngine(rte, cancel);
+            var engine = _applicationEngineFactory.Create<TemplateManager>(cancel);
 
             var timer = new TimedOperation<ApplicationEngine>(engine);
 

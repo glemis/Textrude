@@ -4,6 +4,11 @@ using System.Threading;
 
 namespace Engine.Application
 {
+    /// <summary>
+    /// Added to allow for custom implementations to be injected.
+    /// Most often would just be a copy of main varsion but but additional changes to the _context for options.
+    /// Considered making the _context public so settings can be pushed.
+    /// </summary>
     public interface ITemplateManager
     {
         ImmutableArray<string> ErrorList { get; }

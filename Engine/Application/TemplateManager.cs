@@ -121,7 +121,7 @@ namespace Engine.Application
         ///     Intention is to import delegate function classes that inherit from ScriptObject to global
         /// </summary>
         /// <param name="import"></param>
-        public void ImportScriptObjectToTop(ScriptObject import)
+        public virtual void ImportScriptObjectToTop(ScriptObject import)
         {
             _top.Import(import);
         }
@@ -129,7 +129,7 @@ namespace Engine.Application
         /// <summary>
         ///     Adds a variable to the context
         /// </summary>
-        public void AddVariable(string name, object val)
+        public virtual void AddVariable(string name, object val)
         {
             _top.Add(name, val);
         }
@@ -138,7 +138,7 @@ namespace Engine.Application
         ///     Adds an include path to the ScriptLoader used by the template engine
         ///     If template loader is not script loader throw error
         /// </summary>
-        public void AddIncludePath(string path)
+        public virtual void AddIncludePath(string path)
         {
             if (_scriptLoader.GetType() != typeof(ScriptLoader))
             {
@@ -181,7 +181,7 @@ namespace Engine.Application
             }
         }
 
-        public static ImmutableArray<ModelPath> PathsForObjectTree(IDictionary<string, object> container,
+        public virtual ImmutableArray<ModelPath> PathsForObjectTree(IDictionary<string, object> container,
             ModelPath prefix)
         {
             var ret = new List<ModelPath>();
@@ -209,10 +209,10 @@ namespace Engine.Application
             return ret.ToImmutableArray();
         }
 
-        public ImmutableArray<ModelPath> GetBuiltIns() => PathsForObjectTree(_context.BuiltinObject, ModelPath.Empty);
-        public ImmutableArray<ModelPath> GetObjectTree() => PathsForObjectTree(_top, ModelPath.Empty);
+        public virtual ImmutableArray<ModelPath> GetBuiltIns() => PathsForObjectTree(_context.BuiltinObject, ModelPath.Empty);
+        public virtual ImmutableArray<ModelPath> GetObjectTree() => PathsForObjectTree(_top, ModelPath.Empty);
 
-        public static ImmutableArray<ModelPath> GetKeywords()
+        public virtual ImmutableArray<ModelPath> GetKeywords()
         {
             var keywords =
                 @"func end if else for break continue
@@ -225,7 +225,7 @@ namespace Engine.Application
                 .ToImmutableArray();
         }
 
-        public ImmutableArray<ModelPath> ModelPaths() =>
+        public virtual ImmutableArray<ModelPath> ModelPaths() =>
             GetBuiltIns()
                 .Concat(GetObjectTree())
                 .Concat(GetKeywords())
