@@ -27,10 +27,6 @@ namespace TextrudeInteractive
         private void ConfigureServices(ServiceCollection services)
         {
             services.AddSingleton<MainWindow>();
-            services.AddSingleton<IFileSystemOperations, FileSystem>();
-            services.AddSingleton<IRunTimeEnvironment, RunTimeEnvironment>();
-            services.AddSingleton<ITemplateLoader, ScriptLoader>();
-            services.AddSingleton<TemplateManagerFactory>();
             services.AddSingleton<ApplicationEngineFactory>();
             
         }

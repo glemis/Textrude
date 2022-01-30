@@ -17,7 +17,7 @@ namespace Engine.Application
         /// <summary>
         ///     underlying template context
         /// </summary>
-        private readonly TemplateContext _context = new();
+        public readonly TemplateContext _context = new();
 
 
         /// <summary>

@@ -8,17 +8,23 @@ namespace TextrudeInteractive
     public class ApplicationEngineFactory
     {
 
+        private readonly IFileSystemOperations _ops;
+        private readonly ITemplateLoader _loader;
         private readonly IRunTimeEnvironment _environment;
-        private readonly TemplateManagerFactory _templateManagerFactory;
 
-        public ApplicationEngineFactory(IRunTimeEnvironment _environment, TemplateManagerFactory _templateManagerFactory)
+        public ApplicationEngineFactory()
         {
-            this._environment = _environment;
-            this._templateManagerFactory = _templateManagerFactory;
+            this._ops = new FileSystem();
+            this._environment = new RunTimeEnvironment(this._ops);
+            this._loader = new ScriptLoader(this._ops);
         }
         public ApplicationEngine Create<TTempalteManager> (CancellationToken cancel) where TTempalteManager : ITemplateManager
         {
-            return new ApplicationEngine(_templateManagerFactory.Create<TTempalteManager>(), _environment, cancel);
+            TemplateManager templateManager = new(_ops, _loader);
+            templateManager._context.LoopLimit = 500;
+            templateManager._context.ObjectRecursionLimit = 50;
+            templateManager._context.StrictVariables = false;
+            return new ApplicationEngine(templateManager, _environment, cancel);
         }
     }
 }
