@@ -12,17 +12,18 @@ namespace Engine.Application
     /// <summary>
     ///     Wraps the Scriban template engine to make it easier to use
     /// </summary>
-    public class TemplateManager
+    public class TemplateManager : ITemplateManager
     {
         /// <summary>
         ///     underlying template context
         /// </summary>
         private readonly TemplateContext _context = new();
 
+
         /// <summary>
         ///     loader for included scripts
         /// </summary>
-        private readonly ScriptLoader _scriptLoader;
+        internal readonly ITemplateLoader _scriptLoader;
 
         /// <summary>
         ///     The top-most scriptObject in the context
@@ -46,6 +47,24 @@ namespace Engine.Application
             _context.ObjectRecursionLimit = 100;
             _scriptLoader = new ScriptLoader(ops);
             _context.TemplateLoader = _scriptLoader;
+            _top.Add("templateManager", "TemplateManager:FileSystem:ScriptLoader");
+            _context.PushGlobal(_top);
+        }
+
+        /// <summary>
+        /// Create Template manager with defined template loader passed in.
+        /// </summary>
+        /// <param name="loader"></param>
+        public TemplateManager(IFileSystemOperations ops, ITemplateLoader loader)
+        {
+            _context.StrictVariables = false;
+            _context.LoopLimit = int.MaxValue;
+            _context.ObjectRecursionLimit = 100;
+            _scriptLoader = loader;
+
+            _context.TemplateLoader = _scriptLoader;
+            _top.Add("templateManager", $"TemplateManager:Custom:{loader.GetType().ToString()}");
+
             _context.PushGlobal(_top);
         }
 
@@ -98,6 +117,16 @@ namespace Engine.Application
         }
 
         /// <summary>
+        ///     Adds a script object to top.
+        ///     Intention is to import delegate function classes that inherit from ScriptObject to global
+        /// </summary>
+        /// <param name="import"></param>
+        public void ImportScriptObjectToTop(ScriptObject import)
+        {
+            _top.Import(import);
+        }
+
+        /// <summary>
         ///     Adds a variable to the context
         /// </summary>
         public void AddVariable(string name, object val)
@@ -107,10 +136,15 @@ namespace Engine.Application
 
         /// <summary>
         ///     Adds an include path to the ScriptLoader used by the template engine
+        ///     If template loader is not script loader throw error
         /// </summary>
         public void AddIncludePath(string path)
         {
-            _scriptLoader.AddIncludePath(path);
+            if (_scriptLoader.GetType() != typeof(ScriptLoader))
+            {
+                throw new InvalidOperationException("Calling AddIncludePath on Template manager not supported unless managers template loader was set to type 'ScriptLoader'");
+            }
+            ((ScriptLoader)_scriptLoader).AddIncludePath(path);
         }
 
         /// <summary>

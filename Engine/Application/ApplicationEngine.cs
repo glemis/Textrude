@@ -39,31 +39,42 @@ namespace Engine.Application
     ///     conventions for the various names-spaces, output streams etc
     ///     are encapsulated in this class.
     ///     IMPORTANT - it is expected that each instance of an ApplicationEngine
-    ///     will only be used to provide  a single render pass for a singe template.
+    ///     will only be used to provide a single render pass for a singe template.
     /// </remarks>
-    public class ApplicationEngine
+    public class ApplicationEngine : IApplicationEngine<ApplicationEngine>
     {
         private readonly CancellationToken _cancel;
-        private readonly RunTimeEnvironment _environment;
+        private readonly IRunTimeEnvironment _environment;
 
         private readonly RuntimeInfo _info = new();
 
         /// <summary>
         ///     provides generic scriban Template operations
         /// </summary>
-        private readonly TemplateManager _templateManager;
+        public readonly ITemplateManager _templateManager;
 
         /// <summary>
         ///     Create a new application engine
         /// </summary>
+        public ApplicationEngine(ITemplateManager _templateManager, IRunTimeEnvironment _environment, CancellationToken cancel = new())
+        {
+            this._templateManager = _templateManager;
+            this._environment = _environment;
+            _cancel = cancel;
+
+            if (this._templateManager is TemplateManager { _scriptLoader: ScriptLoader })
+            {
+                //If template loader comes from file system we always add the location of the application executable as an include path
+                //This allows us to easily ship a library of standard scripts
+                _templateManager.AddIncludePath(_environment.ApplicationFolder());
+            }
+        }
+
         public ApplicationEngine(RunTimeEnvironment environment, CancellationToken cancel = new())
         {
-            _environment = environment;
-            _templateManager = new TemplateManager(environment.FileSystem);
-            //we always add the location of the application executable as an include path for 
-            //scripts. This allows us to easily ship a library of standard scripts
-            _templateManager.AddIncludePath(environment.ApplicationFolder());
-            _cancel = cancel;
+            this._templateManager = new TemplateManager(environment.FileSystem);
+            this._environment = environment;
+            _cancel = new CancellationToken();
         }
 
         /// <summary>
@@ -217,6 +228,24 @@ namespace Engine.Application
             return this;
         }
 
+        /// <summary>
+        ///     Imports a class implementing ScriptObject for the purposes of adding delegate functions
+        ///     Puposfully importing without namespacing such as array.size to support peoples existing implementations
+        /// </summary>
+        public ApplicationEngine ImportMethods(ScriptObject methodsClass)
+        {
+            _templateManager.ImportScriptObjectToTop(methodsClass);
+            return this;
+        }
+
+        /// <summary>
+        ///     Imports a static class of static functions onto a named variable within _top script object
+        /// </summary>
+        public ApplicationEngine ImportMethods(string name, Func<IEnumerable<Type>> typeFetcher)
+        {
+            _templateManager.AddVariable(name.ToLowerInvariant(), ExtensionCache.GetOrCreate(name, typeFetcher));
+            return this;
+        }
 
         /// <summary>
         ///     Retrieve the output of the engine render pass

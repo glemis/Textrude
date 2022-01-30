@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Engine.Application
 {
-    public class RunTimeEnvironment
+    public class RunTimeEnvironment : IRunTimeEnvironment
     {
         public readonly IFileSystemOperations FileSystem;
 
