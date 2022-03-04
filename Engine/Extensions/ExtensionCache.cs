@@ -52,20 +52,20 @@ namespace Engine.Application
         }
 
         public static ScriptObject GetDebugMethods() =>
-            GetOrCreate(KnownAssemblies.Debug.ToString(), () => new[] { typeof(DebugMethods) });
+            GetOrCreate(KnownAssemblies.Debug.ToString(), () => new[] {typeof(DebugMethods)});
 
 
         public static ScriptObject GetMiscMethods() =>
-            GetOrCreate(KnownAssemblies.Misc.ToString(), () => new[] { typeof(MiscMethods) });
+            GetOrCreate(KnownAssemblies.Misc.ToString(), () => new[] {typeof(MiscMethods)});
 
         public static ScriptObject GetTextrudeMethods() =>
-            GetOrCreate(KnownAssemblies.Textrude.ToString(), () => new[] { typeof(TextrudeMethods) });
+            GetOrCreate(KnownAssemblies.Textrude.ToString(), () => new[] {typeof(TextrudeMethods)});
 
 
         public static ScriptObject GetGroupingMethods() =>
-            GetOrCreate(KnownAssemblies.Group.ToString(), () => new[] { typeof(Group) });
+            GetOrCreate(KnownAssemblies.Group.ToString(), () => new[] {typeof(Group)});
 
         public static ScriptObject GetTimeComparisonMethods() =>
-            GetOrCreate(KnownAssemblies.TimeComparison.ToString(), () => new[] { typeof(TimeRangeMethods) });
+            GetOrCreate(KnownAssemblies.TimeComparison.ToString(), () => new[] {typeof(TimeRangeMethods)});
     }
 }

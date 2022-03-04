@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace TextrudeInteractive
+namespace Engine.Model
 {
     /// <summary>
     ///     Holds all the input necessary to run a template rendering pass
@@ -42,7 +42,7 @@ namespace TextrudeInteractive
         {
             return str
                 .Split(new[] {'\r', '\n'}, StringSplitOptions.TrimEntries | StringSplitOptions.TrimEntries)
-                .Where(p => !p.StartsWith("#"))
+                .Where(p => !p.StartsWith("#") && !String.IsNullOrWhiteSpace(p))
                 .ToArray();
         }
     }

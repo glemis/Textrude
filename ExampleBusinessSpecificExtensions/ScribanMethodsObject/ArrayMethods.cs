@@ -6,9 +6,9 @@ using System.Dynamic;
 using System.Globalization;
 using System.Linq;
 
-namespace MyCompany.ScribanMethodsObject
+namespace OLA.ScribanMethodsObject
 {
-    public class ArrayMethods:ScriptObject
+    public class ObjectArrayMethods:ScriptObject
     {
 
         public static ScriptArray MakeTree(ScriptArray array, string parentProperty, string primaryKey)

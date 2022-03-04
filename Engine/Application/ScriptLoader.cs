@@ -22,6 +22,8 @@ namespace Engine.Application
         /// </summary>
         private readonly List<string> _includePaths = new();
 
+        internal readonly Dictionary<string,string> _includeMap = new();
+
         public ScriptLoader(IFileSystemOperations filesystem) => _filesystem = filesystem;
 
         /// <summary>
@@ -37,15 +39,21 @@ namespace Engine.Application
             {
                 var path = Path.Combine(i, templateName);
                 if (_filesystem.Exists(path))
+                {
+                    _includeMap[templateName] = path;
                     return path;
+                }
             }
-
+            _includeMap[templateName] = templateName;
             return templateName;
         }
 
 
         public string Load(TemplateContext context, SourceSpan callerSpan, string templatePath)
-            => TemplateProcessor.ApplyAllTransforms(_filesystem.ReadAllText(templatePath));
+        {
+            
+            return TemplateProcessor.ApplyAllTransforms(_filesystem.ReadAllText(templatePath));
+        }
 
 
         public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath) =>

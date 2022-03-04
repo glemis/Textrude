@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Engine\Engine.csproj" />
+    <ProjectReference Include="..\ExampleBusinessSpecificExtensions\ExampleBusinessSpecificExtensions.csproj" />
     <ProjectReference Include="..\SharedApplication\SharedApplication.csproj" />
   </ItemGroup>
 

@@ -51,6 +51,8 @@ namespace TextrudeInteractive
         private int _responseTimeMs = 50;
         private int _uiLockCount;
 
+        internal IEnumerable<string> LastRecordedIncludes;
+
         public MainWindow(ApplicationEngineFactory _applicationEngineFactory)
         {
             this._applicationEngineFactory = _applicationEngineFactory;
@@ -246,6 +248,7 @@ namespace TextrudeInteractive
             Rename(_outputManager, PaneType.Output);
         }
 
+
         #endregion
 
         #region inputs menu
@@ -295,6 +298,7 @@ namespace TextrudeInteractive
 
         private void ToggleWordWrap(object sender, RoutedEventArgs e) =>
             _editorVisualSettings.WordWrap = !_editorVisualSettings.WordWrap;
+        
 
         #endregion
 
@@ -434,21 +438,9 @@ namespace TextrudeInteractive
 
         private TimedOperation<ApplicationEngine> Render(EngineInputSet gi, CancellationToken cancel)
         {
-            var engine = _applicationEngineFactory.Create<TemplateManager>(cancel);
-
+            var engine = _applicationEngineFactory.Create(cancel);
             var timer = new TimedOperation<ApplicationEngine>(engine);
-
-            foreach (var m in gi.Models)
-                engine = engine.WithModel(m.Name, m.Text, m.Format);
-            engine = engine
-                .WithEnvironmentVariables()
-                .WithIncludePaths(gi.IncludePaths)
-                .WithDefinitions(gi.Definitions)
-                .WithHelpers()
-                .WithTemplate(gi.Template);
-
-
-            engine.Render();
+            engine.RenderByInputSet(gi);
             return timer;
         }
 
@@ -474,6 +466,10 @@ namespace TextrudeInteractive
 
             Errors.Text += $"Completed: {DateTime.Now.ToLongTimeString()}  Render time: {elapsedMs}ms" +
                            Environment.NewLine;
+            Errors.Text += $"Includes invoked: {String.Join(Environment.NewLine,timedEngine.Value.GetLastRunsIncludeMap())}" +
+                           Environment.NewLine;
+            
+            
             if (engine.HasErrors)
             {
                 Errors.Foreground = Brushes.OrangeRed;
@@ -488,6 +484,9 @@ namespace TextrudeInteractive
 
             //There's no point in updating  completion data if the render pass was unsuccessful
             if (engine.HasErrors) return;
+            WebBrowser.NavigateToString(@"<html><head><meta http-equiv=""Content-Type"" content=""text/html; charset=UTF-8"" /></head><body>" + engine.Output + "</body></html>");
+
+            LastRecordedIncludes = timedEngine.Value.GetLastRunsIncludeMap();
 
             static CompletionType MapType(ModelPath.PathType type)
             {
@@ -503,7 +502,6 @@ namespace TextrudeInteractive
             var nodes = engine.ModelPaths()
                 .Select(r => new CompletionNode(r.Render(), r.Terminal(), MapType(r.ModelType)
                 )).ToArray();
-
 
             var comp = new Completions(nodes);
             TemplateEditPane.MonacoPane.SetCompletions(comp);
@@ -629,5 +627,10 @@ namespace TextrudeInteractive
         }
 
         #endregion
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

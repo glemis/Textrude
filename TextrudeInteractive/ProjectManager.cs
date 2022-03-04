@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Shell;
@@ -21,11 +22,12 @@ namespace TextrudeInteractive
         public string CurrentProjectPath { get; private set; } = string.Empty;
         public bool IsDirty { get; set; }
 
-        private TextrudeProject CreateProject()
+        private Engine.Model.TextrudeProject CreateProject()
         {
-            var proj = new TextrudeProject
+            var proj = new Engine.Model.TextrudeProject
             {
                 Version = 1,
+                LastRecordedIncludes = _owner.LastRecordedIncludes,
                 EngineInput = _owner.CollectInput(),
                 OutputControl = _owner.CollectOutput()
             };
@@ -42,7 +44,7 @@ namespace TextrudeInteractive
             try
             {
                 var text = File.ReadAllText(path);
-                var proj = JsonSerializer.Deserialize<TextrudeProject>(text);
+                var proj = JsonSerializer.Deserialize<Engine.Model.TextrudeProject>(text);
 
                 CurrentProjectPath = path;
                 UpdateUi(proj);
@@ -102,12 +104,12 @@ namespace TextrudeInteractive
         public void NewProject()
         {
             CurrentProjectPath = string.Empty;
-            var proj = new TextrudeProject();
+            var proj = new Engine.Model.TextrudeProject();
             UpdateUi(proj);
             IsDirty = false;
         }
 
-        private void UpdateUi(TextrudeProject project)
+        private void UpdateUi(Engine.Model.TextrudeProject project)
         {
             //TODO nasty hack to cope with old style projects where we always had 3 inputs and
             //outputs.  Can be removed in a few months from Feb 01 2021

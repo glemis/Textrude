@@ -12,18 +12,18 @@ namespace Engine.Application
     /// <summary>
     ///     Wraps the Scriban template engine to make it easier to use
     /// </summary>
-    public class TemplateManager : ITemplateManager
+    public class TemplateManager
     {
         /// <summary>
         ///     underlying template context
         /// </summary>
-        public readonly TemplateContext _context = new();
+        internal TemplateContext _context = new();
 
 
         /// <summary>
         ///     loader for included scripts
         /// </summary>
-        internal readonly ITemplateLoader _scriptLoader;
+        internal readonly ITemplateLoader _templateLoader;
 
         /// <summary>
         ///     The top-most scriptObject in the context
@@ -45,8 +45,8 @@ namespace Engine.Application
             _context.StrictVariables = true;
             _context.LoopLimit = int.MaxValue;
             _context.ObjectRecursionLimit = 100;
-            _scriptLoader = new ScriptLoader(ops);
-            _context.TemplateLoader = _scriptLoader;
+            _templateLoader = new ScriptLoader(ops);
+            _context.TemplateLoader = _templateLoader;
             _top.Add("templateManager", "TemplateManager:FileSystem:ScriptLoader");
             _context.PushGlobal(_top);
         }
@@ -60,12 +60,17 @@ namespace Engine.Application
             _context.StrictVariables = false;
             _context.LoopLimit = int.MaxValue;
             _context.ObjectRecursionLimit = 100;
-            _scriptLoader = loader;
+            _templateLoader = loader;
 
-            _context.TemplateLoader = _scriptLoader;
+            _context.TemplateLoader = _templateLoader;
             _top.Add("templateManager", $"TemplateManager:Custom:{loader.GetType().ToString()}");
 
             _context.PushGlobal(_top);
+        }
+
+        internal void WithConfiguration(Action<TemplateContext> config)
+        {
+            _context?.Invoke(config);
         }
 
         /// <summary>
@@ -126,6 +131,18 @@ namespace Engine.Application
             _top.Import(import);
         }
 
+
+        /// <summary>
+        ///    Sets a readonly variable to the context
+        /// </summary>
+        /// <remarks>
+        ///    Primary use is adding a function implementing IScriptCustomFunction much like include which is callable but cannot be modified
+        /// </remarks>
+        public virtual void AddReadonlyVariable(string name, object val)
+        {
+            _top.SetValue(name, val, true);
+        }
+
         /// <summary>
         ///     Adds a variable to the context
         /// </summary>
@@ -140,11 +157,11 @@ namespace Engine.Application
         /// </summary>
         public virtual void AddIncludePath(string path)
         {
-            if (_scriptLoader.GetType() != typeof(ScriptLoader))
+            if (_templateLoader.GetType() != typeof(ScriptLoader))
             {
                 throw new InvalidOperationException("Calling AddIncludePath on Template manager not supported unless managers template loader was set to type 'ScriptLoader'");
             }
-            ((ScriptLoader)_scriptLoader).AddIncludePath(path);
+            ((ScriptLoader)_templateLoader).AddIncludePath(path);
         }
 
         /// <summary>

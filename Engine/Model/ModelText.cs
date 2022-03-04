@@ -1,6 +1,4 @@
-﻿using Engine.Model;
-
-namespace TextrudeInteractive
+﻿namespace Engine.Model
 {
     /// <summary>
     ///     Holds text that can be parsed to become a Model

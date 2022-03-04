@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TextrudeInteractive
+namespace Engine.Model
 {
     public record EngineOutputSet
     {

@@ -1,35 +1,37 @@
 ﻿using Engine.Application;
-using MyCompany.ScribanMethodsObject;
-using MyCompany.ScribanMethodsStatic;
+using OLA.DataAccess;
+using OLA.ScribanMethodsObject;
+using Scriban;
 using Scriban.Runtime;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace TextrudeInteractive
 {
     public class ApplicationEngineFactory
     {
-
-        private readonly IFileSystemOperations _ops;
         private readonly ITemplateLoader _loader;
-        private readonly IRunTimeEnvironment _environment;
+        private readonly RunTimeEnvironment _environment;
 
-        public ApplicationEngineFactory()
+        public ApplicationEngineFactory(ITemplateLoader _loader)
         {
-            this._ops = new FileSystem();
-            this._environment = new RunTimeEnvironment(this._ops);
-            this._loader = new ScriptLoader(this._ops);
+            this._loader = _loader;
+            this._environment = new RunTimeEnvironment(new FileSystem());
         }
-        public ApplicationEngine Create<TTempalteManager> (CancellationToken cancel) where TTempalteManager : ITemplateManager
+        public ApplicationEngine Create(CancellationToken cancel)
         {
-            TemplateManager templateManager = new(_ops, _loader);
-            templateManager._context.LoopLimit = 500;
-            templateManager._context.ObjectRecursionLimit = 50;
-            templateManager._context.StrictVariables = false;
-
-            ApplicationEngine applicationEngine = new(templateManager, _environment, cancel);
-            applicationEngine.ImportMethods(new ArrayMethods());
-            applicationEngine.ImportMethods("cool_methods", () => new[] { typeof(CoolMethods) });
+            var applicationEngine = new ApplicationEngine(_loader, _environment, cancel)
+                .WithConfiguration(new TemplateContext() { EnableNullIndexer = true, LoopLimit = 2000, RecursiveLimit = 0, ObjectRecursionLimit = 100, StrictVariables = false })
+                .WithEnvironmentVariables()
+                .WithHelpers()
+                    .ImportMethods(new DataverseData())
+                    .ImportMethods(new ObjectArrayMethods())
+                    .ImportMethods(new DateMethods())
+                    .ImportMethods(new LanguageMethods())
+                    .ImportMethods(new NumberToWordMethods())
+                    .ImportMethods(new OrdanalMethods())
+                    .ImportMethods(new TypeConversionMethods());
 
             return applicationEngine;
         }
