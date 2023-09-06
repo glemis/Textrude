@@ -3,11 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Engine.Extensions;
 using Engine.Model;
 using Engine.Model.Helpers;
 using Engine.TemplateProcessing;
+using Scriban;
 using Scriban.Runtime;
 
 namespace Engine.Application;
@@ -53,19 +55,75 @@ public class ApplicationEngine
     /// <summary>
     ///     provides generic scriban Template operations
     /// </summary>
-    private readonly TemplateManager _templateManager;
+    public readonly TemplateManager _templateManager;
 
     /// <summary>
-    ///     Create a new application engine
+    ///     Create a new application engine with cusotm template managers and runtime
     /// </summary>
+    public ApplicationEngine(ITemplateLoader _templateLoader, RunTimeEnvironment _environment, CancellationToken cancel = new())
+    {
+        this._templateManager = new TemplateManager(_environment.FileSystem, _templateLoader);
+        this._environment = _environment;
+        _cancel = cancel;
+        if (this._templateManager is TemplateManager { _templateLoader: ScriptLoader })
+        {
+            //If template loader comes from file system we always add the location of the application executable as an include path
+            //This allows us to easily ship a library of standard scripts
+            _templateManager.AddIncludePath(_environment.ApplicationFolder());
+        }
+    }
+
+    // Default Create a new application engine
     public ApplicationEngine(RunTimeEnvironment environment, CancellationToken cancel = new())
     {
-        _environment = environment;
-        _templateManager = new TemplateManager(environment.FileSystem);
-        //we always add the location of the application executable as an include path for
-        //scripts. This allows us to easily ship a library of standard scripts
-        _templateManager.AddIncludePath(environment.ApplicationFolder());
-        _cancel = cancel;
+        this._templateManager = new TemplateManager(environment.FileSystem);
+        this._environment = environment;
+        _cancel = new CancellationToken();
+    }
+
+    /// <summary>
+    ///     Import a IScriptCustomFunction to _top 
+    /// </summary>
+    /// <remarks>
+    ///     Some custom functions can require deeper access to the internals for exposing a function. 
+    /// </remarks> 
+    /// <param name="functionName"></param>
+    /// <param name="customFunction"></param>
+    public ApplicationEngine ImportCustomFunction(string functionName, IScriptCustomFunction customFunction)
+    {
+        _templateManager.AddReadonlyVariable(functionName, customFunction);
+        return this;
+    }
+
+    /// <summary>
+    ///     Imports a class implementing ScriptObject onto a named variable *<paramref name="groupName"/> within _top script object
+    /// </summary>
+    /// <remarks>
+    ///     If script objects methods are not considerably unique highly suggest using <paramref name="groupName"/>
+    /// </remarks> 
+    /// <param name="methodsClass">Script object which contains methods to surface.</param>
+    /// <param name="groupName">Optional if excluded methods will not be grouped ex: array.sort</param>
+    public ApplicationEngine ImportMethods(ScriptObject methodsClass, string groupName = null)
+    {
+        if (String.IsNullOrEmpty(groupName))
+        {
+            _templateManager.ImportScriptObjectToTop(methodsClass);
+            return this;
+        }
+        _templateManager.AddVariable(groupName.ToLowerInvariant(), methodsClass);
+        return this;
+    }
+
+    /// <summary>
+    ///     Imports a static class of static functions onto a named variable within _top script object
+    /// </summary>
+    /// <remarks>
+    ///     Unlike overload for importing a scriptObject directly this requires a name as the building of the script object will be cached by said name.
+    /// </remarks> 
+    public ApplicationEngine ImportMethods(string name, Func<IEnumerable<Type>> typeFetcher)
+    {
+        _templateManager.AddVariable(name.ToLowerInvariant(), ExtensionCache.GetOrCreate(name, typeFetcher));
+        return this;
     }
 
     /// <summary>
@@ -91,6 +149,11 @@ public class ApplicationEngine
     public string RenderToErrorOrOutput() => Render().ErrorOrOutput;
     public ImmutableArray<ModelPath> ModelPaths() => _templateManager.ModelPaths();
 
+    public ApplicationEngine WithTemplateManagerConfiguration(Action<TemplateContext> configAction)
+    {
+        _templateManager.WithConfiguration(configAction);
+        return this;
+    }
 
     public ApplicationEngine WithModel(string name, object obj)
     {
@@ -271,5 +334,44 @@ public class ApplicationEngine
             return false;
         res = ModelDeserializerFactory.Serialise(JsonGraph.ToJsonSerialisableTree(v!), ModelFormat.Json);
         return true;
+    }
+
+
+    public IEnumerable<string> GetLastRunsIncludeMap()
+    {
+        if (_templateManager._templateLoader.GetType() == typeof(ScriptLoader))
+        {
+            return ((ScriptLoader)_templateManager._templateLoader)._includeMap.Keys;
+        }
+        return _templateManager._context.CachedTemplates.Select(ct => ct.Key);
+    }
+
+    public ApplicationEngine RenderProject(TextrudeProject project, bool fromFile = false)
+    {
+        return RenderByInputSet(project.EngineInput);
+    }
+
+    public ApplicationEngine RenderByInputSet(EngineInputSet inputs, bool fromFile = false)
+    {
+        foreach (var m in inputs.Models)
+        {
+            if (fromFile && !String.IsNullOrEmpty(m.Path))
+            {
+
+                WithModel(m.Name, m.Text, m.Format);
+            }
+            else
+            {
+                WithModel(m.Name, m.Text, m.Format);
+            }
+        }
+
+
+        WithIncludePaths(inputs.IncludePaths);
+        WithDefinitions(inputs.Definitions);
+        WithTemplate(inputs.Template);
+        Render();
+
+        return this;
     }
 }

@@ -17,12 +17,12 @@ public class TemplateManager
     /// <summary>
     ///     underlying template context
     /// </summary>
-    private readonly TemplateContext _context = new();
+    internal TemplateContext _context = new();
 
     /// <summary>
     ///     loader for included scripts
     /// </summary>
-    private readonly ScriptLoader _scriptLoader;
+    internal readonly ITemplateLoader _templateLoader;
 
     /// <summary>
     ///     The top-most scriptObject in the context
@@ -44,9 +44,53 @@ public class TemplateManager
         _context.StrictVariables = true;
         _context.LoopLimit = int.MaxValue;
         _context.ObjectRecursionLimit = 100;
-        _scriptLoader = new ScriptLoader(ops);
-        _context.TemplateLoader = _scriptLoader;
+        _templateLoader = new ScriptLoader(ops);
+        _context.TemplateLoader = _templateLoader;
+        _top.Add("templateManager", "TemplateManager:FileSystem:ScriptLoader");
         _context.PushGlobal(_top);
+    }
+
+    /// <summary>
+    /// Create Template manager with defined template loader passed in.
+    /// </summary>
+    /// <param name="loader"></param>
+    public TemplateManager(IFileSystemOperations ops, ITemplateLoader loader)
+    {
+        _context.StrictVariables = false;
+        _context.LoopLimit = int.MaxValue;
+        _context.ObjectRecursionLimit = 100;
+        _templateLoader = loader;
+
+        _context.TemplateLoader = _templateLoader;
+        _top.Add("templateManager", $"TemplateManager:Custom:{loader.GetType().ToString()}");
+
+        _context.PushGlobal(_top);
+    }
+
+    internal void WithConfiguration(Action<TemplateContext> configAction)
+    {
+        configAction(_context);
+    }
+
+    /// <summary>
+    ///     Adds a script object to top.
+    ///     Intention is to import delegate function classes that inherit from ScriptObject to global
+    /// </summary>
+    /// <param name="import"></param>
+    public virtual void ImportScriptObjectToTop(ScriptObject import)
+    {
+        _top.Import(import);
+    }
+
+    /// <summary>
+    ///    Sets a readonly variable to the context
+    /// </summary>
+    /// <remarks>
+    ///    Primary use is adding a function implementing IScriptCustomFunction much like include which is callable but cannot be modified
+    /// </remarks>
+    public virtual void AddReadonlyVariable(string name, object val)
+    {
+        _top.SetValue(name, val, true);
     }
 
     /// <summary>
@@ -100,17 +144,22 @@ public class TemplateManager
     /// <summary>
     ///     Adds a variable to the context
     /// </summary>
-    public void AddVariable(string name, object val)
+    public virtual void AddVariable(string name, object val)
     {
         _top.Add(name, val);
     }
 
     /// <summary>
     ///     Adds an include path to the ScriptLoader used by the template engine
+    ///     If template loader is not script loader throw error
     /// </summary>
-    public void AddIncludePath(string path)
+    public virtual void AddIncludePath(string path)
     {
-        _scriptLoader.AddIncludePath(path);
+        if (_templateLoader.GetType() != typeof(ScriptLoader))
+        {
+            throw new InvalidOperationException("Calling AddIncludePath on Template manager not supported unless managers template loader was set to type 'ScriptLoader'");
+        }
+        ((ScriptLoader)_templateLoader).AddIncludePath(path);
     }
 
     /// <summary>
@@ -152,7 +201,7 @@ public class TemplateManager
         }
     }
 
-    public static ImmutableArray<ModelPath> PathsForObjectTree(IDictionary<string, object> container,
+    public virtual ImmutableArray<ModelPath> PathsForObjectTree(IDictionary<string, object> container,
         ModelPath prefix)
     {
         var ret = new List<ModelPath>();
@@ -180,10 +229,10 @@ public class TemplateManager
         return ret.ToImmutableArray();
     }
 
-    public ImmutableArray<ModelPath> GetBuiltIns() => PathsForObjectTree(_context.BuiltinObject, ModelPath.Empty);
-    public ImmutableArray<ModelPath> GetObjectTree() => PathsForObjectTree(_top, ModelPath.Empty);
+    public virtual ImmutableArray<ModelPath> GetBuiltIns() => PathsForObjectTree(_context.BuiltinObject, ModelPath.Empty);
+    public virtual ImmutableArray<ModelPath> GetObjectTree() => PathsForObjectTree(_top, ModelPath.Empty);
 
-    public static ImmutableArray<ModelPath> GetKeywords()
+    public virtual ImmutableArray<ModelPath> GetKeywords()
     {
         var keywords =
             @"func end if else for break continue
@@ -196,7 +245,7 @@ public class TemplateManager
             .ToImmutableArray();
     }
 
-    public ImmutableArray<ModelPath> ModelPaths() =>
+    public virtual ImmutableArray<ModelPath> ModelPaths() =>
         GetBuiltIns()
             .Concat(GetObjectTree())
             .Concat(GetKeywords())

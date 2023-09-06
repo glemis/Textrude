@@ -17,6 +17,7 @@ using MaterialDesignExtensions.Controls;
 using TextrudeInteractive.Monaco;
 using TextrudeInteractive.Monaco.Messages;
 using TextrudeInteractive.SettingsManagement;
+using Scriban.Runtime;
 #if ! HASGITVERSION
 // for default GitVersionInformation
 using SharedApplication;
@@ -29,6 +30,9 @@ namespace TextrudeInteractive
     /// </summary>
     public partial class MainWindow : MaterialWindow
     {
+        //Dependency injections
+        private readonly ApplicationEngineFactory _applicationEngineFactory;
+
         private const string HomePage = @"https://github.com/NeilMacMullen/Textrude";
 
         private readonly MonacoVisualSettings _editorVisualSettings = new();
@@ -47,9 +51,11 @@ namespace TextrudeInteractive
         private UpgradeManager.VersionInfo _latestVersion = UpgradeManager.VersionInfo.Default;
         private int _responseTimeMs = 50;
         private int _uiLockCount;
+        internal IEnumerable<string> LastRecordedIncludes;
 
-        public MainWindow()
+        public MainWindow(ApplicationEngineFactory _applicationEngineFactory)
         {
+            this._applicationEngineFactory = _applicationEngineFactory;
             InitializeComponent();
 
             if (!MonacoResourceFetcher.IsWebView2RuntimeAvailable())
@@ -429,24 +435,11 @@ namespace TextrudeInteractive
             return _editorVisualSettings.IsBusy;
         }
 
-        private static TimedOperation<ApplicationEngine> Render(EngineInputSet gi, CancellationToken cancel)
+        private TimedOperation<ApplicationEngine> Render(EngineInputSet gi, CancellationToken cancel)
         {
-            var rte = new RunTimeEnvironment(new FileSystem());
-            var engine = new ApplicationEngine(rte, cancel);
-
+            var engine = _applicationEngineFactory.Create(cancel);
             var timer = new TimedOperation<ApplicationEngine>(engine);
-
-            foreach (var m in gi.Models)
-                engine = engine.WithModel(m.Name, m.Text, m.Format);
-            engine = engine
-                .WithEnvironmentVariables()
-                .WithIncludePaths(gi.IncludePaths)
-                .WithDefinitions(gi.Definitions)
-                .WithHelpers()
-                .WithTemplate(gi.Template);
-
-
-            engine.Render();
+            engine.RenderByInputSet(gi);
             return timer;
         }
 
@@ -472,6 +465,8 @@ namespace TextrudeInteractive
 
             Errors.Text += $"Completed: {DateTime.Now.ToLongTimeString()}  Render time: {elapsedMs}ms" +
                            Environment.NewLine;
+            Errors.Text += $"Includes invoked: {String.Join(Environment.NewLine, timedEngine.Value.GetLastRunsIncludeMap())}" +
+                           Environment.NewLine;
             if (engine.HasErrors)
             {
                 Errors.Foreground = Brushes.OrangeRed;
@@ -486,6 +481,8 @@ namespace TextrudeInteractive
 
             //There's no point in updating  completion data if the render pass was unsuccessful
             if (engine.HasErrors) return;
+            WebBrowser.NavigateToString(@"<html><head><meta http-equiv=""Content-Type"" content=""text/html; charset=UTF-8"" /></head><body>" + engine.Output + "</body></html>");
+            LastRecordedIncludes = timedEngine.Value.GetLastRunsIncludeMap();
 
             static CompletionType MapType(ModelPath.PathType type)
             {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace TextrudeInteractive;
+namespace Engine.Model;
 
 /// <summary>
 ///     Holds all the input necessary to run a template rendering pass

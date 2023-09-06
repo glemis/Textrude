@@ -23,6 +23,11 @@ public class ScriptLoader : ITemplateLoader
     /// </summary>
     private readonly List<string> _includePaths = new();
 
+    /// <summary>
+    ///     Track includes a template loads
+    /// </summary>
+    internal readonly Dictionary<string, string> _includeMap = new();
+
     public ScriptLoader(IFileSystemOperations filesystem) => _filesystem = filesystem;
 
     /// <summary>
@@ -38,9 +43,13 @@ public class ScriptLoader : ITemplateLoader
         {
             var path = Path.Combine(i, templateName);
             if (_filesystem.Exists(path))
+            {
+                _includeMap[templateName] = path;
                 return path;
+            }
         }
 
+        _includeMap[templateName] = templateName;
         return templateName;
     }
 

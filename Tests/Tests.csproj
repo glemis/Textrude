@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  
 
   <ItemGroup>
 
@@ -26,4 +27,13 @@
     <ProjectReference Include="..\Textrude\Textrude.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="TestFiles\CodeCompletionProcessesProject\**" />
+    <EmbeddedResource Remove="TestFiles\CodeCompletionProcessesProject\**" />
+    <None Remove="TestFiles\CodeCompletionProcessesProject\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="TestFiles\ProjectParsingTest1.texproj" />
+  </ItemGroup>
 </Project>

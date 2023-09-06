@@ -126,6 +126,8 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="5" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="5" />
+            <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <DockPanel>
             <TabControl Style="{StaticResource MaterialDesignTabControl}" Name="InputModels" DockPanel.Dock="Top" />
@@ -153,6 +155,13 @@
                                      DockPanel.Dock="Bottom"/>
             </DockPanel>
           
+          </DockPanel>
+
+
+          <GridSplitter Grid.Column="5" />
+
+          <DockPanel Grid.Column="6">
+            <WebBrowser Name="WebBrowser"></WebBrowser>
           </DockPanel>
 
         </Grid>

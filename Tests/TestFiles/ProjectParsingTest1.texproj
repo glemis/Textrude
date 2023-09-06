@@ -1,0 +1,38 @@
+{
+  "Version": 1,
+  "Description": "",
+  "LastRecordedIncludes": [
+    "header.sbnhtml"
+  ],
+  "EngineInput": {
+    "Definitions": [],
+    "IncludePaths": [
+      "C:\\Users\\ericsutter\\Source\\Repos\\Glemis\\Textrude\\Tests\\TestFiles\\Templates\\"
+    ],
+    "Models": [
+      {
+        "Format": 2,
+        "Text": "ExampleField: I am required\r\nExampleList:\r\n- Item1\r\n- Item2",
+        "Path": "C:\\Users\\ericsutter\\source\\repos\\Glemis\\Textrude\\Tests\\TestFiles\\ProjectParsingTest1\\ExampleModel.yaml",
+        "Name": "ExampleModel"
+      },
+      {
+        "Format": 0,
+        "Text": "{\r\n    \u0022Name\u0022:\u0022Bill Smith\u0022\r\n}",
+        "Path": "",
+        "Name": "Contact"
+      }
+    ],
+    "Template": "{{\r\n    header = \u0022My Header\u0022\r\n    include \u0022header.sbnhtml\u0022\r\n    \r\n    Contact.Name\u002B \u0022\\n\u0022\r\n    ExampleModel.ExampleField\u002B \u0022\\n\u0022\r\n\r\n    for item in ExampleModel.ExampleList\r\n        item \u002B \u0022\\n\u0022\r\n    end\r\n}}",
+    "TemplatePath": ""
+  },
+  "OutputControl": {
+    "Outputs": [
+      {
+        "Format": "",
+        "Name": "output",
+        "Path": ""
+      }
+    ]
+  }
+}

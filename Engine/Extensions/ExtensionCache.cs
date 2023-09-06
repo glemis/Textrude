@@ -20,12 +20,12 @@ public static class ExtensionCache
         TimeComparison
     }
 
-    private static readonly Dictionary<KnownAssemblies, ScriptObject> CachedResults =
+    private static readonly Dictionary<string, ScriptObject> CachedResults =
         new();
 
     public static ScriptObject GetHumanizrMethods()
     {
-        return GetOrCreate(KnownAssemblies.Humanizr,
+        return GetOrCreate(KnownAssemblies.Humanizr.ToString(),
             () =>
             {
                 //force a load of the DLL otherwise we won't see the types
@@ -40,7 +40,7 @@ public static class ExtensionCache
     }
 
 
-    private static ScriptObject GetOrCreate(KnownAssemblies name, Func<IEnumerable<Type>> typeFetcher)
+    internal static ScriptObject GetOrCreate(string name, Func<IEnumerable<Type>> typeFetcher)
     {
         if (CachedResults.TryGetValue(name, out var scriptObject))
             return scriptObject;
@@ -53,19 +53,19 @@ public static class ExtensionCache
     }
 
     public static ScriptObject GetDebugMethods() =>
-        GetOrCreate(KnownAssemblies.Debug, () => new[] { typeof(DebugMethods) });
+        GetOrCreate(KnownAssemblies.Debug.ToString(), () => new[] { typeof(DebugMethods) });
 
 
     public static ScriptObject GetMiscMethods() =>
-        GetOrCreate(KnownAssemblies.Misc, () => new[] { typeof(MiscMethods) });
+        GetOrCreate(KnownAssemblies.Misc.ToString(), () => new[] { typeof(MiscMethods) });
 
     public static ScriptObject GetTextrudeMethods() =>
-        GetOrCreate(KnownAssemblies.Textrude, () => new[] { typeof(TextrudeMethods) });
+        GetOrCreate(KnownAssemblies.Textrude.ToString(), () => new[] { typeof(TextrudeMethods) });
 
 
     public static ScriptObject GetGroupingMethods() =>
-        GetOrCreate(KnownAssemblies.Group, () => new[] { typeof(Group) });
+        GetOrCreate(KnownAssemblies.Group.ToString(), () => new[] { typeof(Group) });
 
     public static ScriptObject GetTimeComparisonMethods() =>
-        GetOrCreate(KnownAssemblies.TimeComparison, () => new[] { typeof(TimeRangeMethods) });
+        GetOrCreate(KnownAssemblies.TimeComparison.ToString(), () => new[] { typeof(TimeRangeMethods) });
 }
